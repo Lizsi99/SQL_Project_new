@@ -1,5 +1,3 @@
-## SQL Tutor
-
 A local RAG (Retrieval-Augmented Generation) chatbot that answers SQL questions using a curated knowledge base, HuggingFace embeddings, ChromaDB, and a locally running Ollama LLM — served through a Gradio web interface.
 
 ---
@@ -96,7 +94,28 @@ This will:
 - Embed them using `all-MiniLM-L6-v2` (downloaded automatically on first run)
 - Save the vectors to `vector_db/`
 
-### Step 2 — Start the chat app
+### Step 2 — Test the answer module (optional)
+
+You can run `answer.py` logic directly from a Python session to verify that retrieval and the LLM are working before launching the full UI:
+
+```python
+from answer import answer_question
+
+answer, docs = answer_question("What is a LEFT JOIN?")
+print(answer)
+```
+
+`answer.py` is responsible for the core RAG pipeline:
+- Loads the ChromaDB vector store and `all-MiniLM-L6-v2` embeddings on import
+- Combines the current question with prior conversation history into a single retrieval query, so short follow-ups like "Can you show an example?" still pull relevant chunks
+- Retrieves the 8 most relevant knowledge-base chunks (`RETRIEVAL_K = 8`)
+- Injects those chunks into a strict system prompt that limits the LLM to only the retrieved context
+- Sends the full conversation (system prompt + history + new question) to the local Ollama LLM
+- Returns `(answer_text, retrieved_docs)` — the docs are used by `app.py` to populate the side panel
+
+> `answer.py` does not need to be run directly in normal use — `app.py` imports it automatically.
+
+### Step 3 — Start the chat app
 
 ```bash
 python app.py
@@ -107,8 +126,6 @@ This will open the Gradio interface in your browser. The app:
 - Retrieves the 8 most relevant knowledge-base chunks
 - Sends them along with your question to the local Ollama LLM
 - Displays the answer and shows retrieved context in a side panel
-
-> `answer.py` does not need to be run directly — `app.py` imports it automatically.
 
 ---
 
@@ -123,3 +140,6 @@ sql-tutor/knowledge-base/
 ```
 
 Add or edit `.md` files here, then re-run `ingest.py` to update the vector store.
+
+
+
